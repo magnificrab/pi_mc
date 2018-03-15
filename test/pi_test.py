@@ -10,7 +10,8 @@ import pdb
 #TODO: a lot of the client code is duplicated here. 
 def admin_forbidden():
     sesh = requests.Session()
-    pi_url = 'http://localhost:5000/pi/api/v0.0/documentation'
+    #pi_url = 'http://localhost:5000/pi/api/v0.0/documentation'
+    pi_url = 'http://shale:5000/pi/api/v0.0/documentation'
     resp = sesh.get(pi_url)
     sesh.close()
     if resp.status_code == 403:
@@ -21,7 +22,7 @@ def admin_forbidden():
 #TODO: deal with staydead if re-implemented
 def admin_kill():
     sesh = requests.Session()
-    pi_url = 'http://localhost:5000/pi/api/v0.0/admin/kill'
+    pi_url = 'http://shale:5000/pi/api/v0.0/admin/kill'
     resp = sesh.get(pi_url)
     sesh.close()
     if resp.status_code == 204:
@@ -31,7 +32,7 @@ def admin_kill():
 
 def admin_status():
     sesh = requests.Session()
-    pi_url = 'http://localhost:5000/pi/api/v0.0/admin/status'
+    pi_url = 'http://shale:5000/pi/api/v0.0/admin/status'
     resp = sesh.get(pi_url)
     sesh.close()
     if resp.status_code == 200:
@@ -41,10 +42,11 @@ def admin_status():
 
 def admin_stats(pic_expected=0):
     sesh = requests.Session()
-    pi_url = 'http://localhost:5000/pi/api/v0.0/admin/stats'
+    pi_url = 'http://shale:5000/pi/api/v0.0/admin/stats'
     resp = sesh.get(pi_url)
     r = resp.json()
     sesh.close()
+    #print("TODO: ",resp.status_code, pic_expected, r['pic'], r)
     if resp.status_code == 200 and pic_expected == r['pic']:
         return True
     else:
@@ -52,7 +54,7 @@ def admin_stats(pic_expected=0):
 
 def pi_call(sesh=None):
     req_params = {'x': random.random(), 'y': random.random()}
-    pi_url = 'http://localhost:5000/pi/api/v0.0/pi_in_circle'
+    pi_url = 'http://shale:5000/pi/api/v0.0/pi_in_circle'
     resp = sesh.get(pi_url, params=req_params)
     #resp = requests.get(pi_url, req_params)
     respd = resp.json().split(' ')[3]
@@ -84,7 +86,7 @@ def bulk_pi_coord(calls=10, reqpc=1000): #requests per call
 
         #req_data = io.StringIO(json.dumps(req_data))
         req_data = io.BytesIO(bytes(json.dumps(req_data),encoding='utf-8'))
-        pi_url = 'http://localhost:5000/pi/api/v0.0/bulk_pic'
+        pi_url = 'http://shale:5000/pi/api/v0.0/bulk_pic'
         resp = sesh.post(pi_url, data=req_data)  #TODO: handle non 200 returns
         if resp.status_code != 200:
             raise ValueError('Server return code not 200 {}'.format(resp.status_code))
