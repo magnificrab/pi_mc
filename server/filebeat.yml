@@ -2,7 +2,7 @@ output:
   logstash:
     enabled: true
     hosts:
-      - shale:5044
+      - rlyeh-a:5044
     timeout: 15
     ssl:
       certificate_authorities:

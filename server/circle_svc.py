@@ -13,10 +13,9 @@ from twisted.web.resource import Resource
 from twisted.web.wsgi import WSGIResource
 from twisted.web.server import Site
 from twisted.web.static import File
-from twisted.internet import reactor, ssl, protocol, task, defer
+from twisted.internet import reactor
 from autobahn.twisted.resource import WSGIRootResource
 from twisted.python.threadpool import ThreadPool
-from twisted.python.modules import getModule
 import pdb
 import uuid
 import structlog
@@ -135,17 +134,11 @@ def launch():
     cache_logger_on_first_use=True,
     twisted.python.log.startLogging(sys.stderr)
 
-    #certData = getModule(__name__).filePath.sibling('cert.pem').getContent()
-    #certData = getModule(__name__).filePath.sibling('key.pem').getContent()
-    certData = getModule(__name__).filePath.sibling('server.pem').getContent()
-    certificate = ssl.PrivateCertificate.loadPEM(certData)
-
     thread_pool = ThreadPool(maxthreads=10)
     thread_pool.start()
     wsgir = WSGIResource(reactor, thread_pool, app)
     wsgirr = WSGIRootResource(wsgir, {})
-    #reactor.listenTCP(5000, Site(wsgirr))
-    reactor.listenSSL(5000, Site(wsgirr), certificate.options())
+    reactor.listenTCP(5000, Site(wsgirr))
     reactor.callWhenRunning(exit_gracefully_on_reactor_shutdown)
     logger.msg('lauching reactor', whom='world')
 
