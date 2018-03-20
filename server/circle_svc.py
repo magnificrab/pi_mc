@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from flask import Flask, json, jsonify, request, abort
+"""
 import twisted
 from twisted.application import service
 from twisted.web import server, static
@@ -16,11 +17,15 @@ from twisted.web.static import File
 from twisted.internet import reactor
 from autobahn.twisted.resource import WSGIRootResource
 from twisted.python.threadpool import ThreadPool
+"""
 import pdb
 import uuid
 import structlog
 from prometheus_client.twisted import MetricsResource
-from prometheus_client import Summary
+from prometheus_client import Summary, MetricsHandler
+import socket
+from http.server import HTTPServer
+#import bjoern
 
 #TODO: are all these imports really necessary?
 
@@ -37,6 +42,7 @@ def documentation():
     abort(403)  #forbidden 
     #return 'documentation TBD'
 
+"""
 @app.before_first_request
 def exit_gracefully_on_reactor_shutdown():
     reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 0)
@@ -49,6 +55,7 @@ def suicide(graceful=False):
         exit_code = -1
     reactor.addSystemEventTrigger('after', 'shutdown', os._exit, exit_code)  #TODO
     reactor.stop()
+"""
 
 @app.route('/pi/api/v0.0/admin/kill') #todo: post only fails?
 def kill():
@@ -64,8 +71,10 @@ def kill():
 
 @app.route('/pi/api/v0.0/admin/stats')
 def stats():
+    #pdb.set_trace()
     log = logger.new(request_id=str(uuid.uuid4()),)
-    log.msg('running stats',func='stats')
+    #log.msg('running stats',func='stats')  #No msg with 
+    log.info('running stats')
     return (jsonify(metrics), 200)
 
 @app.route('/pi/api/v0.0/admin/status')
@@ -77,7 +86,8 @@ def selftest():
     '''actual functional test to confirm all dependencies are 
     completely working -- lacks timeout'''
     log = logger.new(request_id=str(uuid.uuid4()),)
-    log.msg('running selftest',func='selftest')
+    #log.msg('running selftest',func='selftest') #Twistd only
+    log.info('running selftest',func='selftest')
     res = (pic(.7, .7) == True and pic(.8, .8) == False) #TODO: log esp failures
     return (str(res), 200)
 
@@ -117,7 +127,8 @@ def deleteme():
     print('del this f')
 
 #TODO: add auto-restart
-def launch():
+"""
+def launch_twistd():
     #TODO: why is this here and not at top?
     from structlog.stdlib import LoggerFactory
     from structlog.threadlocal import wrap_dict
@@ -150,6 +161,45 @@ def launch():
     reactor.run()
     #logger.msg('reactor down', whom='world')
     #sys.exit(0)
+"""
+
+class PrometheusEndpointServer(threading.Thread):
+    def __init__(self, httpd, *args, **kwargs):
+        self.httpd = httpd
+        super(PrometheusEndpointServer, self).__init__(*args, **kwargs)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+def launch_gunicorn():
+    from structlog.stdlib import LoggerFactory
+    from structlog.threadlocal import wrap_dict
+    structlog.configure(context_class=wrap_dict(dict), logger_factory=LoggerFactory())
+
+    structlog.configure_once(
+        #processors=chain,
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+
+    try:
+        httpd = HTTPServer(('0.0.0.0', 8000), MetricsHandler)
+    except (OSError, socket.error):
+        return
+
+    thread = PrometheusEndpointServer(httpd)
+    thread.daemon = True
+    thread.start()
+    #log.info('Exporting Prometheus metrics on port 8000')
+
+    app.run(host='0.0.0.0')
+
+#def launch_bjoern():
+    #bjoern.run(app, '0.0.0.0', 5000)
 
 if __name__ == '__main__':
-    launch()
+    #launch_twistd()
+    launch_gunicorn()
+    #launch_bjoern()

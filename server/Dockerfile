@@ -13,6 +13,7 @@ RUN pip3 install structlog==17.2.0
 RUN pip3 install autobahn==17.10.1
 RUN pip3 install twisted==17.9.0
 RUN pip3 install prometheus_client==0.0.21
+RUN pip3 install gunicorn==19.7.1
 #RUN pip3 install service_identity==17.0.0
 
 COPY circle_svc.py /usr/local/bin/circle_svc.py
